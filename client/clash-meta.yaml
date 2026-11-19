@@ -1,0 +1,43 @@
+# Clash Meta (mihomo) 客户端配置示例
+#
+# 注意: 原版 Clash 内核不支持 VLESS/Reality,
+#       必须使用 Clash.Meta / mihomo 内核的客户端:
+#       - Clash Verge Rev (Windows/macOS/Linux)
+#       - FlClash (Android/桌面)
+#       - ClashMetaForAndroid
+#
+# 使用方法: 把下面 <...> 占位符替换成服务器信息
+# (所有参数见服务器上的 /root/vpn-info.txt), 然后导入客户端。
+
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+
+proxies:
+  - name: "Reality-HK"            # 随便起名
+    type: vless
+    server: <服务器IP>             # 如 1.2.3.4
+    port: 443
+    uuid: <UUID>
+    network: tcp
+    udp: true
+    tls: true
+    flow: xtls-rprx-vision
+    servername: <SNI>              # 如 www.samsung.com
+    client-fingerprint: chrome     # 指纹, 固定 chrome 即可
+    reality-opts:
+      public-key: <PUBLIC_KEY>     # x25519 公钥
+      short-id: <SHORT_ID>         # shortId
+
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - Reality-HK
+      - DIRECT
+
+rules:
+  # 国内流量直连(不消耗服务器流量), 按需增删
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
