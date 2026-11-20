@@ -119,3 +119,9 @@ ss -tlnp | grep 443         # 确认端口监听
 - [Xray 官方文档](https://xtls.github.io/)
 - [XTLS-REALITY 协议说明](https://github.com/XTLS/Xray-core/discussions/1689)
 - [mihomo (Clash.Meta) 内核](https://github.com/MetaCubeX/mihomo)
+
+## 踩坑记录（实战排障结论）
+
+1. **云厂商安全组**：脚本只能改系统防火墙，**厂商控制台的防火墙/安全组必须手动放行**——有的厂商默认只放行 SSH 端口，其余全部入站阻断（ping 通、SSH 通、443 不通就是这么来的）。
+2. **Xray 与客户端内核的版本兼容**：Xray-core v26.x 起改了 Reality 协议，mihomo ≤1.19.x、旧版客户端会握手被拒（服务端日志表现为 `REALITY: processed invalid connection: authentication failed or validation criteria not met`，TCP 通但认证失败）。**服务端和客户端内核要选同时代版本**：新 xray 配新 mihomo/sing-box，或老 xray（如 v25.6.7）配老客户端。
+3. **Clash Verge Rev 本地 profile**：必须自带完整 `dns:` 块（fake-ip 模式），且不要写 `mixed-port`/`allow-lan` 等被 Verge 托管的字段——否则 TUN 模式下 DNS 黑洞直接全断网。

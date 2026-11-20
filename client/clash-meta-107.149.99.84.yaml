@@ -1,43 +1,45 @@
-# Clash Meta (mihomo) 客户端配置 — 107.149.99.84 节点 (2026-11-20 部署)
-#
-# 注意: 原版 Clash 内核不支持 VLESS/Reality,
-#       必须使用 Clash.Meta / mihomo 内核的客户端:
-#       - Clash Verge Rev (Windows/macOS/Linux)
-#       - FlClash (Android/桌面)
-#       - ClashMetaForAndroid
-#
-# v2rayN / Shadowrocket / NekoBox 用户直接导入 vless:// URI:
-# vless://d3ecbcf5-5540-494d-89b7-d8abd7bbfe4e@107.149.99.84:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=www.samsung.com&fp=chrome&pbk=_C5uUl6qba1S_6_CK_fw16HP4UPVDS6ihkNL688W1Gw&sid=9a78056ad0211b2c&type=tcp#Reality-www.samsung.com
-
-mixed-port: 7890
-allow-lan: false
-mode: rule
-log-level: warning
-
 proxies:
-  - name: "Reality-LA-107"        # LA 节点, 1c1g Debian 11
-    type: vless
-    server: 107.149.99.84
-    port: 443
-    uuid: d3ecbcf5-5540-494d-89b7-d8abd7bbfe4e
-    network: tcp
-    udp: true
-    tls: true
-    flow: xtls-rprx-vision
-    servername: www.samsung.com
-    client-fingerprint: chrome
-    reality-opts:
-      public-key: _C5uUl6qba1S_6_CK_fw16HP4UPVDS6ihkNL688W1Gw
-      short-id: 9a78056ad0211b2c
-
+- name: Reality-LA-107
+  type: vless
+  server: 107.149.99.84
+  port: 443
+  uuid: d3ecbcf5-5540-494d-89b7-d8abd7bbfe4e
+  network: tcp
+  udp: true
+  tls: true
+  flow: xtls-rprx-vision
+  servername: www.samsung.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: _C5uUl6qba1S_6_CK_fw16HP4UPVDS6ihkNL688W1Gw
+    short-id: 9a78056ad0211b2c
 proxy-groups:
-  - name: "PROXY"
-    type: select
-    proxies:
-      - Reality-LA-107
-      - DIRECT
-
+- name: PROXY
+  type: select
+  proxies:
+  - Reality-LA-107
+  - DIRECT
 rules:
-  # 国内流量直连(不消耗服务器流量), 按需增删
-  - GEOIP,CN,DIRECT
-  - MATCH,PROXY
+- GEOIP,CN,DIRECT
+- MATCH,PROXY
+ipv6: false
+unified-delay: true
+dns:
+  enable: true
+  listen: 0.0.0.0:53
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  respect-rules: false
+  use-system-hosts: false
+  fake-ip-filter:
+  - '*.lan'
+  - '*.local'
+  - '*.arpa'
+  - localhost.ptlogin2.qq.com
+  default-nameserver:
+  - 223.6.6.6
+  - 119.29.29.29
+  nameserver:
+  - 223.6.6.6
+  - 119.29.29.29
