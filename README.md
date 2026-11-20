@@ -125,3 +125,43 @@ ss -tlnp | grep 443         # 确认端口监听
 1. **云厂商安全组**：脚本只能改系统防火墙，**厂商控制台的防火墙/安全组必须手动放行**——有的厂商默认只放行 SSH 端口，其余全部入站阻断（ping 通、SSH 通、443 不通就是这么来的）。
 2. **Xray 与客户端内核的版本兼容**：Xray-core v26.x 起改了 Reality 协议，mihomo ≤1.19.x、旧版客户端会握手被拒（服务端日志表现为 `REALITY: processed invalid connection: authentication failed or validation criteria not met`，TCP 通但认证失败）。**服务端和客户端内核要选同时代版本**：新 xray 配新 mihomo/sing-box，或老 xray（如 v25.6.7）配老客户端。
 3. **Clash Verge Rev 本地 profile**：必须自带完整 `dns:` 块（fake-ip 模式），且不要写 `mixed-port`/`allow-lan` 等被 Verge 托管的字段——否则 TUN 模式下 DNS 黑洞直接全断网。
+
+## 版本兼容性（重要）
+
+### 现象
+
+服务端装了过新的 Xray-core 后，老客户端（mihomo / sing-box 旧版 / 旧 v2ray 系内核）连不上：
+
+- 客户端表现：节点超时 / 提示 `received real certificate`（服务端认证失败后回落到伪装站，客户端看到真证书）
+- 服务端 debug 日志（`journalctl -u xray`）能看到实锤：
+  `REALITY: processed invalid connection from <客户端IP>: authentication failed or validation criteria not met`
+- 特征：**TCP 能通、TLS 能到服务器、UUID/公钥/shortId 都没错，但认证就是被拒**；同参数换新版客户端即可成功
+
+### 原因
+
+Xray-core v26.x（2026 年起）更改了 Reality 协议实现（`xray x25519` 输出从 `Private key:/Public key:` 变为 `PrivateKey:/Password (PublicKey):/Hash32:` 即这次变更的一部分），与 2025 年及更早的客户端内核不互通。
+
+### 版本配对原则
+
+| 服务端 Xray-core | 配套客户端内核 |
+|---|---|
+| v26.x（最新） | mihomo ≥ 2026 年版 / 最新 sing-box / 最新 v2ray 系 |
+| v25.6.7（25.x 末版） | mihomo ≤ 1.19.x、2025 年版客户端（久经考验的组合） |
+
+**原则：服务端和客户端选"同时代"版本，谁也别抢跑。**
+
+### 常用命令
+
+```bash
+# 服务端降级到指定版本（老客户端场景）
+curl -fsSL https://github.com/XTLS/Xray-core/releases/download/v25.6.7/Xray-linux-64.zip -o /tmp/x.zip
+mkdir -p /tmp/xr && unzip -oq /tmp/x.zip -d /tmp/xr
+systemctl stop xray && cp /tmp/xr/xray /usr/local/bin/xray && chmod +x /usr/local/bin/xray
+systemctl start xray && xray version   # 确认 Xray 25.6.7
+
+# 排障时临时开 debug 看握手细节（查完记得改回 warning）
+sed -i 's/"loglevel": "warning"/"loglevel": "debug"/' /usr/local/etc/xray/config.json
+systemctl restart xray && journalctl -u xray -f | grep -i reality
+```
+
+> 本仓库 `install.sh` 装的是官方最新版。如果你客户端内核较老，装完后按上面命令降级服务端即可。
