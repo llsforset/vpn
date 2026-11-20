@@ -107,8 +107,9 @@ gen_secrets() {
     UUID=$(cat /proc/sys/kernel/random/uuid)
     local keyout
     keyout=$(xray x25519)
-    PRIVATE_KEY=$(echo "$keyout" | awk '/Private key:/ {print $3}')
-    PUBLIC_KEY=$(echo "$keyout" | awk '/Public key:/ {print $3}')
+    # 兼容新旧 Xray 输出格式: 旧版 "Private key:/Public key:", 新版(v25+) "PrivateKey:/Password (PublicKey):"
+    PRIVATE_KEY=$(echo "$keyout" | awk '/Private key:|PrivateKey:/ {print $NF}' | head -1)
+    PUBLIC_KEY=$(echo "$keyout" | awk '/Public key:|Password \(PublicKey\):/ {print $NF}' | head -1)
     SHORT_ID=$(openssl rand -hex 8)
     [[ -n "$PRIVATE_KEY" && -n "$PUBLIC_KEY" ]] || fail "密钥生成失败"
     ok "UUID / x25519 密钥对 / shortId 已生成"
